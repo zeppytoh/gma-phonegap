@@ -58,13 +58,13 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    width: 75%;
+    width: 71%;
     margin: 0.6em 0;
     clear: left;
 }
 #stats-page li.ui-field-contain input {
     display: inline-block;
-    width: 2.4em;
+    width: 2em;
     margin-right: 1.5em; /* give space for the "+" icon */
     float: right;
     text-align: center;
