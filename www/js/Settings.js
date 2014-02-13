@@ -12,7 +12,7 @@
 var Settings = {
     
     // This is the URL where the latest available profiles will be fetched from
-    profileAuthority: 'http://test.dodomail.net/MobileGMA/profiles.json',
+    profileAuthority: 'http://gma-android-abc-xyz.net/profiles.json',
     
     // These are the default hard coded profiles
     profiles: [
