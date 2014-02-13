@@ -1,0 +1,71 @@
+/*
+    Override some jQueryMobile styles
+*/
+.ui-header .ui-title {
+    /* make side margins less wide in the header */
+    margin: 0 15%;
+}
+
+/*
+    Prevent text selection/highlighting
+*/
+*:not(input,textarea) {
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+    -khtml-user-select: none !important;
+    -moz-user-select: -moz-none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+}
+
+/*
+    Specific formatting
+*/
+
+.container {
+    margin: 0;
+    padding: 0;
+}
+.page {
+    /* all pages hidden by default until shown */
+    display: none;
+    margin-bottom: 1em;
+}
+
+.visible-page {
+    display: block;
+}
+
+.page .content {
+    padding: 1em;
+}
+
+/* Spacing for login page widgets */
+#login-page label, #login-page button {
+    margin-top: 1em;
+}
+
+/* Spacing for custom server settings widgets */
+#custom-settings label {
+    margin-top: 1em;
+}
+
+/* Stats entry rows */
+#stats-page li.ui-field-contain label {
+    display: inline-block;
+    font-size: .8em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 75%;
+    margin: 0.6em 0;
+    clear: left;
+}
+#stats-page li.ui-field-contain input {
+    display: inline-block;
+    width: 2.4em;
+    margin-right: 1.5em; /* give space for the "+" icon */
+    float: right;
+    text-align: center;
+}
