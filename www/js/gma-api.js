@@ -1,11 +1,12 @@
 /************************************************************************/
 /**
- * @class GMA
+ * @class GMA (offline demo)
  * Joshua Chan <joshua@appdevdesigns.net>
+ *
+ * This is for demontrating the user interface only.
  *
  *  Dependencies:
  *    - jQuery
- *    - async
  *        
  */
 
@@ -27,81 +28,6 @@ var GMA = function (opts) {
 
 
 /**
- * Wrapper for jQuery.ajax(), used internally
- */
-GMA.prototype.request = function (opts) {
-    if (!opts.noAnimation) {
-        this.opts.showBusyAnim();
-        this.isLoading += 1;
-    }
-    
-    var self = this;
-    var dfd = $.Deferred();
-    
-    $.ajax({
-        url: self.opts.gmaBase + opts.path,
-        method: opts.method,
-        data: (typeof opts.data != 'undefined') ?
-                JSON.stringify(opts.data) : opts.data,
-        dataType: 'json',
-        contentType: 'application/json',
-        cache: false
-    })
-    .always(function(){
-        if (!opts.noAnimation) {
-            self.isLoading -= 1;
-            if (self.isLoading <= 0) {
-                self.opts.hideBusyAnim();
-            }
-        }
-    })
-    .fail(function(res, status, err){
-        if (err.message && err.message.match(/JSON Parse error/)) {
-            // JSON parse error usually means the session timed out and
-            // the Drupal site has redirected to the CAS login page
-            // instead of serving up a JSON response.
-            if (self.opts.reloginCallback) {
-                opts.reloginCallback()
-                .then(function(){
-                    // Resend the request
-                    self.request(opts)
-                    .then(function(res, status, err){
-                        dfd.resolve(res, status, err);
-                    });
-                })
-                .fail(function(err){
-                    console.log("Relogin failed", err);
-                });
-            } else {
-                // Deliver a hopefully more helpful error
-                console.log("Session timeout?", err);
-                dfd.reject(res, status, new Error("Login session timed out"));
-            }
-        }
-        else {
-            dfd.reject(res, status, err);
-        }
-    })
-    .then(function(data, status, res){
-        dfd.resolve(data, status, res);
-    });
-
-    return dfd;
-}
-
-
-GMA.clearCookies = function () {
-    var cookie = document.cookie.split(';');
-    for (var i = 0; i < cookie.length; i++) {
-        var chip = cookie[i],
-            entry = chip.split("="),
-            name = entry[0];
-        document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    }
-}
-
-
-/**
  * @function login
  *
  * Uses the CAS RESTful interface to log in to the GMA site.
@@ -113,110 +39,14 @@ GMA.clearCookies = function () {
  * @return jQuery Deferred
  */
 GMA.prototype.login = function (username, password) {
-    var tgt;
-    var st;
     var dfd = $.Deferred();
     var self = this;
-    var gmaHome = self.opts.gmaBase + '?q=node';
-    //var gmaHome = self.opts.gmaBase + 'index.php?q=en/node';
-    //var gmaHome = self.opts.gmaBase + '?q=node&destination=node';
-    //var gmaHome = self.opts.gmaBase + '?q=gmaservices&destination=gmaservices';
     
     self.opts.showBusyAnim();
-    GMA.clearCookies();
-    async.series([
-        
-        // Step 0: Make sure we are not already logged in
-        function(next){
-            if (self.isLoggedIn) {
-                self.logout()
-                .then(function(){ next() });
-            } else {
-                next();
-            }
-        },
-        // Step 1: Get the TGT
-        function(next){
-            $.ajax({
-                url: self.opts.casURL + "/v1/tickets",
-                method: "POST",
-                cache: false,
-                data: { username: username, password: password }
-            })
-            .then(function(data, textStatus, res){
-                tgt = res.getResponseHeader('Location');
-                next();
-            })
-            .fail(function(res, textStatus, err){
-                if (err) {
-                    next(err);
-                } else {
-                    next(new Error(textStatus + ': ' + res.status));
-                }
-            });
-        },
-        // Step 2: Get the ST
-        function(next){
-            $.ajax({
-                url: tgt,
-                method: "POST",
-                //data: { service: gmaHome }
-                data: "service=" + gmaHome,
-                processData: false
-            })
-            .then(function(data, textStatus, res){
-                // Credentials verified by CAS server. We now have the
-                // service ticket.
-                st = data;
-                next();
-            })
-            .fail(function(res, textStatus, err){
-                next(err);
-            });
-        },
-        // Step 3: Log in to GMA
-        function(next){
-            var finalURL = gmaHome + 
-                (gmaHome.match(/[?]/) ? "&" : '?') + 
-                "ticket=" + st;
-            $.ajax({
-                url: finalURL,
-                method: "GET"
-            })
-            .then(function(data, textStatus, res){
-                if (data.match(/CAS Authentication failed/)) {
-                    // Authentication problem on the Drupal site
-                    next(new Error("Sorry, there was a problem authenticating with the server"));
-                } else {
-                    next();
-                }
-            })
-            .fail(function(res, textStatus, err){
-                next(err);
-            });
-        },
-        // Step 4: Get user info
-        function(next){
-            self.getUser()
-            .then(function(){ next() })
-            .fail(function(err){
-                // We have logged in to the GMA Drupal site
-                // but the user doesn't have access to the GMA system there.
-                // Log out of the Drupal site.
-                self.logout();
-                next(err);
-            });
-        }
-
-    ], function(err){
+    setTimeout(function(){
         self.opts.hideBusyAnim();
-        if (err) {
-            // All failures from above are caught here
-            dfd.reject(err);
-        } else {
-            dfd.resolve();
-        }
-    });
+        dfd.resolve();
+    }, 2000);
     
     return dfd;
 }
@@ -234,26 +64,15 @@ GMA.prototype.login = function (username, password) {
  */
 GMA.prototype.getUser = function () {
     var dfd = $.Deferred();
-    var self = this;
     
-    self.request({
-        path: '?q=gmaservices/gma_user&type=current',
-        method: 'GET'
-    })
-    .then(function(data, textStatus, res){
-        if (data.success) {
-            var ren = data.data[0];
-            self.preferredName = ren.preferredName;
-            self.renId = ren.renId;
-            self.GUID = ren.GUID;
-            dfd.resolve(ren);
-        }
-        else {
-            dfd.reject(new Error(data.error.errorMessage));
-        }
-    })
-    .fail(function(res, textStatus, err){
-        dfd.reject(err);
+    this.preferredName = "Demo User";
+    this.renId = '123';
+    this.GUID = 'DEMO_USER';
+    
+    dfd.resolve({
+        renId: this.renId,
+        renPreferredName: this.preferredName,
+        GUID: this.GUID
     });
     
     return dfd;
@@ -272,36 +91,11 @@ GMA.prototype.getUser = function () {
  */
 GMA.prototype.getAssignments = function () {
     var dfd = $.Deferred();
-    var self = this;
     
-    self.request({
-        path: '?q=gmaservices/gma_user/' 
-                + self.renId
-                + '/assignments/staff',
-        method: 'GET'
-    })
-    .then(function(data, textStatus, res){
-        if (data.success) {
-            // Create two basic lookup objects indexed by nodeId and by name
-            var assignmentsByID = {};
-            var assignmentsByName = {};
-            if (data.data['staff']) {
-                for (var i=0; i<data.data.staff.length; i++) {
-                    var nodeId = data.data.staff[i].nodeId;
-                    var shortName = data.data.staff[i].shortName;
-                    assignmentsByID[nodeId] = shortName;
-                    assignmentsByName[shortName] = nodeId;
-                }
-            }
-            dfd.resolve(assignmentsByID, assignmentsByName);
-        } else {
-            dfd.reject(new Error(data.error.errorMessage));
-            console.log(data);
-        }
-    })
-    .fail(function(res, textStatus, err){
-        dfd.reject(err);
-    });
+    dfd.resolve(
+        { 101: "Assignment1", 120: "Assignment2" },
+        { "Assignment1": 101, "Assignment2": 120 }
+    );
     
     return dfd;
 }
@@ -321,47 +115,25 @@ GMA.prototype.getReportsForNode = function (nodeId) {
     var dfd = $.Deferred();
     var self = this;
     
-    self.request({
-        path: '?q=gmaservices/gma_staffReport/searchOwn',
-        method: 'POST',
-        data: {
-            nodeId: [nodeId],
-            maxResult: 10
-            //submitted: false
-        }
-    })
-    .then(function(data, textStatus, res){
-        if (data.success) {
-
-            if (!data.data.staffReports) {
-                dfd.reject(new Error("No reports available"));
-            }
-            else {
-                var reports = [];
-                for (var i=0; i<data.data.staffReports.length; i++) {
-                    var reportId = data.data.staffReports[i].staffReportId;
-                    var nodeName = data.data.staffReports[i].node.shortName;
-                    reports.push(new Report({
-                        gma: self,
-                        reportId: reportId, 
-                        nodeId: nodeId, 
-                        nodeName: nodeName,
-                        startDate: data.data.staffReports[i].startDate,
-                        endDate: data.data.staffReports[i].endDate
-                    }));
-                }
-                dfd.resolve(reports);
-            }
-        
-        } else {
-            dfd.reject(new Error(data.error.errorMessage));
-            console.log(data);
-        }
-    })
-    .fail(function(res, textStatus, err){
-        dfd.reject(err);
-    });
+    var reports = [];
+    var dummyData = [
+        { reportId: 1, nodeId: 101, nodeName: "Assignment1", startDate: '20140101', endDate: '20140201' },
+        { reportId: 2, nodeId: 101, nodeName: "Assignment1", startDate: '20140202', endDate: '20140301' },
+        { reportId: 3, nodeId: 101, nodeName: "Assignment1", startDate: '20140302', endDate: '20140401' },
+    ];
     
+    for (var i=0; i<dummyData.length; i++) {
+        reports.push(new Report({
+            gma: self,
+            reportId: dummyData[i].reportId,
+            nodeId: dummyData[i].nodeId,
+            nodeName: dummyData[i].nodeName,
+            startDate: dummyData[i].startDate,
+            endDate: dummyData[i].endDate
+        }));
+    }
+    
+    dfd.resolve(reports);
     return dfd;
 }
 
@@ -376,22 +148,7 @@ GMA.prototype.getReportsForNode = function (nodeId) {
  */
 GMA.prototype.logout = function () {
     var dfd = $.Deferred();
-    var self = this;
-    
-    self.request({
-        path: '?q=logout',
-        method: 'HEAD'
-    })
-    .then(function(){
-        self.isLoggedIn = false;
-        self.renId = null;
-        self.GUID = null;
-        dfd.resolve();
-    })
-    .fail(function(res, status, err){
-        dfd.reject(err);
-    });
-    
+    dfd.resolve();
     return dfd;
 }
 
@@ -439,53 +196,29 @@ Report.prototype.measurements = function () {
     var dfd = $.Deferred();
     var self = this;
     
-    self.gma.request({
-        path: '?q=gmaservices/gma_staffReport/'
-                + self.reportId + '/numeric',
-        method: 'GET'
-    })
-    .then(function(data, textStatus, res) {
-        if (data.success) {
-            
-            // Parse through the layers of JSON structure
-            // and make our own structure that suits us better.
-            var results = {};
-            
-            var numerics = data.data.numericMeasurements;
-            // 1st layer is an array of objects
-            for (var i=0; i<numerics.length; i++) {
-                var strategy = numerics[i];
-                // 2nd layer is an object with a single property
-                for (var strategyName in strategy) {
-                    var measurements = strategy[strategyName];
-                    results[strategyName] = [];
-                    // 3rd layer is an array of objects
-                    for (var j=0; j<measurements.length; j++) {
-                        var info = measurements[j];
-                        results[strategyName].push(
-                            new Measurement({
-                                gma: self.gma,
-                                reportId: self.reportId,
-                                measurementId: info.measurementId,
-                                measurementName: info.measurementName,
-                                measurementDescription: info.measurementDescription,
-                                measurementValue: info.measurementValue
-                            })
-                        );
-                    }
-                }
-            }
-            
-            dfd.resolve(results);
-            
-        } else {
-            dfd.reject(new Error(data.error.errorMessage));
-        }
-    })
-    .fail(function(res, textStatus, err) {
-        dfd.reject(err);
-    });
+    var measurements = { A: [], B: [], C: [] };
+    var dummyData = [
+        { id: 1, name: "Apples", description: "red", value: "10" },
+        { id: 2, name: "Grapes", description: "Purple", value: "15" },
+        { id: 3, name: "Bananas", description: "Yellow", value: "9" },
+        { id: 4, name: "Oranges", description: "Orange", value: "12" }
+    ];
     
+    for (var strategy in measurements) {
+        for (var i=0; i<dummyData.length; i++) {
+            measurements[strategy].push(
+                new Measurement({
+                    gma: self.gma,
+                    reportId: self.reportId,
+                    measurementId: dummyData[i].id,
+                    measurementName: dummyData[i].name,
+                    measurementValue: dummyData[i].value
+                })
+            );
+        }
+    }
+    
+    dfd.resolve(measurements);
     return dfd;
 }
 
@@ -497,12 +230,6 @@ Report.formatDate = function (ymd) {
 
 
 Report.prototype.period = function () {
-    /*
-    var dfd = $.Deferred();
-    dfd.resolve(this.startDate);
-    return dfd;
-    */
-    
     return Report.formatDate(this.startDate)
             + ' &ndash; '
             + Report.formatDate(this.endDate);
@@ -587,32 +314,7 @@ Measurement.prototype.delayedSave = function () {
  */
 Measurement.prototype.save = function () {
     var dfd = $.Deferred();
-    var self = this;
-
-    self.gma.request({
-        noAnimation: true,
-        path: '?q=gmaservices/gma_staffReport/'
-                + self.data.reportId,
-        method: 'PUT',
-        data: [
-            {
-                measurementId: self.data.measurementId,
-                type: 'numeric',
-                value: self.data.measurementValue
-            }
-        ]
-    })
-    .then(function(data, status, res) {
-        if (data.success) {
-            dfd.resolve();
-        } else {
-            dfd.reject(new Error(data.error.errorMessage));
-        }
-    })
-    .fail(function(res, status, err) {
-        dfd.reject(err);
-    });
-    
+    dfd.resolve();
     return dfd;
 }
 
