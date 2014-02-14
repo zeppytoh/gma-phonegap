@@ -4,6 +4,7 @@
  * Dependencies:
  *      - jQuery
  *      - gma-api.js
+ *      - language.js
  *      - Settings.js
  *      - Page.js
  *      - ReportSet.js
@@ -23,12 +24,12 @@ var _alert = function (message, title) {
         navigator.notification.alert(
             message,
             function() {},
-            title || "Notice",
-            "OK"
+            t(title || "Notice"),
+            t("OK")
         );
     } else {
         if (title) {
-            message = title + ':\n' + message;
+            message = t(title) + ':\n' + t(message);
         }
         alert(message);
     }
@@ -92,7 +93,7 @@ var startGMA = function () {
     for (var key in profiles) {
         $serverList.append(
             '<option value="' + key + '">' +
-            profiles[key] +
+            t(profiles[key]) +
             '</option>'
         );
     }

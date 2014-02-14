@@ -45,6 +45,6 @@ var app = {
         app.profilesFetched.always(function(){
             startGMA();
         });
-        //Language.init().always(startGMA);
+        Language.init().always(startGMA);
     }
 };
