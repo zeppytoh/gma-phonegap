@@ -49,7 +49,9 @@ Page.prototype.show = function(){
 
 // Display a page while keeping track of previous pages underneath
 Page.prototype.push = function(){
-    Page.stack.push(this);
+    if (Page.stack[Page.stack.length-1] != this) {
+        Page.stack.push(this);
+    }
     this.show();
 };
 
