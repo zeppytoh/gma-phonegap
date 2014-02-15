@@ -9,6 +9,7 @@
  *    - i18n/fr.js
  *    - i18n/zh-hans.js
  *    - i18n/...
+ *    - Settings.js
  */
 
 /**
@@ -27,8 +28,6 @@ function t(original) {
 
 Language = {
     
-    debugMode: false,
-    defaultLang: 'en',
     dictionary: {},
     
     t: function (original) {
@@ -50,13 +49,13 @@ Language = {
                 },
                 function() {
                     // Error. So fall back on default.
-                    dfd.resolve(self.defaultLang);
+                    dfd.resolve(Settings.defaultLang);
                 }
             );
         } else {
             // PhoneGap plugin not found. Assume browser testing environment
             // and use default.
-            dfd.resolve(self.defaultLang);
+            dfd.resolve(Settings.defaultLang);
         }
         
         return dfd;
@@ -73,25 +72,11 @@ Language = {
         self.detect()
         .then(function(lang){
             lang = String(lang).toLowerCase();
-            $.ajax({
-                url: 'i18n/' + lang + '.json',
-                method: 'GET',
-                dataType: 'json'
-            })
+            self.fetchDictionary(lang)
             .then(function(data){
                 self.dictionary = data;
                 self.translate();
                 dfd.resolve();
-            })
-            .fail(function(res, status, err){
-                
-                alert(
-                    "Could not load dictionary\n" +
-                    lang + '.json\n' +
-                    (err.message || '')
-                );
-                
-                dfd.reject();
             });
         });
         
@@ -99,8 +84,52 @@ Language = {
     },
     
     
+    /*
+     * Download the dictionary data
+     */
+    fetchDictionary: function (lang, offlineMode) {
+        var dfd = $.Deferred();
+        var self = this;
+        
+        var dictionaryURL = 'i18n/' + lang + '.json';
+        if (offlineMode) {
+            console.log("Using offline dictionary");
+        } else {
+            // Fetch latest dictionary from the remote server
+            dictionaryURL = Settings.dictionaryAuthority + dictionaryURL;
+        }
+        
+        $.ajax({
+            url: dictionaryURL,
+            method: 'GET',
+            dataType: 'json'
+        })
+        .then(function(data){
+            dfd.resolve(data);
+        })
+        .fail(function(res, status, err){
+            // Could not get dictionary from server. Fall back on the locally
+            // packaged one.
+            if (!offlineMode) {
+                self.fetchDictionary(lang, true)
+                .then(dfd.resolve)
+                .fail(dfd.reject);
+            }
+            else {
+                alert(
+                    "Could not load dictionary\n" +
+                    lang + '.json\n' +
+                    (err.message || '')
+                );
+                dfd.reject();
+            }
+        });
+        return dfd;
+    },
+
+    
     log: function (elem, original, translated) {
-        if (this.debugMode) {
+        if (Settings.debugMode) {
             console.log(
                 elem.tagName +
                 ": [" + original + "] \n" +

@@ -22,7 +22,7 @@ var _alert = function (message, title) {
 
     if (navigator.notification) {
         navigator.notification.alert(
-            message,
+            t(message),
             function() {},
             t(title || "Notice"),
             t("OK")

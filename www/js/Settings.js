@@ -10,6 +10,13 @@
 
 
 var Settings = {
+
+    debugMode: false,
+
+    // This is the URL where the multilingual dictionary will be fetched from
+    // (see language.js)
+    dictionaryAuthority: 'http://gma-android-abc-xyz.net/',
+    defaultLang: 'en',
     
     // This is the URL where the latest available profiles will be fetched from
     profileAuthority: 'http://gma-android-abc-xyz.net/profiles.json',
