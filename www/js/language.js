@@ -27,6 +27,7 @@ function t(original) {
 
 Language = {
     
+    debugMode: false,
     defaultLang: 'en',
     dictionary: {},
     
@@ -99,14 +100,20 @@ Language = {
     
     
     log: function (elem, original, translated) {
-        //return;
-        console.log(
-            elem.tagName +
-            ": [" + original + "] \n" +
-            "  ==> [" + translated + "]"
-        );
+        if (this.debugMode) {
+            console.log(
+                elem.tagName +
+                ": [" + original + "] \n" +
+                "  ==> [" + translated + "]"
+            );
+        }
     },
     
+    
+    /*
+     * Finds all text elements on the page and translates them into the
+     * current language.
+     */
     translate: function () {
         var self = this;
         
