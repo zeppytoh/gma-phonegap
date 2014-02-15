@@ -112,7 +112,9 @@ var startGMA = function () {
 
     // Logging in
     $('#login-button').on('click', function(){
-        
+        // Disable widgets while communicating with server
+        $('#login-page').find('input,button,select').attr('disabled', 'true');
+
         // Init the GMA object based on the selected profile
         gma = new GMA({
             gmaBase: Settings.getGmaBase(),
@@ -124,9 +126,6 @@ var startGMA = function () {
                 $.mobile.loading("hide");
             }
         });
-        
-        // Disable widgets while communicating with server
-        $('#login-page').find('input,button,select').attr('disabled', 'true');
         
         gma.login($('#cas-username').val(), $('#cas-password').val())
         .fail(function(err){
@@ -293,7 +292,7 @@ var startGMA = function () {
     });
     
     
-    // Switch to a different report preiod when the arrow button is clicked
+    // Switch to a different report period when the arrow button is clicked
     $('#stats-page a.report-nav').on('click', function(){
         var $this = $(this);
         if ($this.hasClass('report-previous')) {
