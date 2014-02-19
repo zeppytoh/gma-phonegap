@@ -36,22 +36,41 @@ Language = {
     },
     
     /*
-     * Detect the user's configured language
+     * Detect the device's configured language
      */
     detect: function () {
         var dfd = $.Deferred();
         var self = this;
         
         if (navigator.globalization) {
-            navigator.globalization.getPreferredLanguage(
-                function(lang) {
-                    dfd.resolve(lang.value);
-                },
-                function() {
-                    // Error. So fall back on default.
-                    dfd.resolve(Settings.defaultLang);
-                }
+            var localeDFD = $.Deferred();
+            var langDFD = $.Deferred();
+            
+            navigator.globalization.getLocaleName(
+                function(locale) { localeDFD.resolve(locale.value); },
+                function() { localeDFD.resolve(null); }
             );
+            navigator.globalization.getPreferredLanguage(
+                function(lang) { langDFD.resolve(lang.value); },
+                function() { langDFD.resolve(null); }
+            );
+            
+            $.when(localeDFD, langDFD)
+            .then(function(locale, lang) {
+                alert("Locale: " + locale + "\nLang: " + lang);
+                var langParts = lang.split(/[^a-z]/i);
+                if (langParts[0].length == 2) {
+                    // iOS has separate settings for language and locale.
+                    // And it uses codes for language.
+                    dfd.resolve(lang);
+                }
+                else {
+                    // Android returns character codes for locale
+                    // and native script for language.
+                    dfd.resolve(locale.substr(0,2));
+                }
+            });
+
         } else {
             // PhoneGap plugin not found. Assume browser testing environment
             // and use default.
@@ -73,8 +92,8 @@ Language = {
         .then(function(lang){
             lang = String(lang).toLowerCase();
             self.fetchDictionary(lang)
-            .then(function(data){
-                self.dictionary = data;
+            .always(function(data){
+                self.dictionary = data || {};
                 self.translate();
                 dfd.resolve();
             });
@@ -91,12 +110,13 @@ Language = {
         var dfd = $.Deferred();
         var self = this;
         
-        var dictionaryURL = 'i18n/' + lang + '.json';
+        var dictionaryURL;
         if (offlineMode) {
+            dictionaryURL = "i18n/" + lang + '.json';
             console.log("Using offline dictionary");
         } else {
             // Fetch latest dictionary from the remote server
-            dictionaryURL = Settings.dictionaryAuthority + dictionaryURL;
+            dictionaryURL = Settings.dictionaryAuthority + "?l=" + lang;
         }
         
         $.ajax({
@@ -115,13 +135,15 @@ Language = {
                 .then(dfd.resolve)
                 .fail(dfd.reject);
             }
+            else if (lang != 'en') {
+                // Could not get locally packaged dictionary in user's language.
+                // Final failsafe is to just use the packaged English data
+                self.fetchDictionary('en', true)
+                .then(dfd.resolve)
+                .fail(dfd.reject);
+            }
             else {
-                alert(
-                    "Could not load dictionary\n" +
-                    lang + '.json\n' +
-                    (err.message || '')
-                );
-                dfd.reject();
+                dfd.reject(new Error("Could not load dictionary"));
             }
         });
         return dfd;
@@ -164,7 +186,6 @@ Language = {
                         $this.attr('placeholder', translated);
                     }
                 } 
-
                 else {
                     // Conventional text elements
                     var original = $this.text();
