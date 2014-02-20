@@ -57,7 +57,7 @@ Language = {
             
             $.when(localeDFD, langDFD)
             .then(function(locale, lang) {
-                alert("Locale: " + locale + "\nLang: " + lang);
+                //alert("Locale: " + locale + "\nLang: " + lang);
                 var langParts = lang.split(/[^a-z]/i);
                 if (langParts[0].length == 2) {
                     // iOS has separate settings for language and locale.
