@@ -24,6 +24,7 @@
     "Error": "错误",
     "Sorry, there was an error": "对不起，出现了错误",
     "Login failure": "登录失败",
+    "Credentials were not accepted": "密码被拒绝",
     "No assignments found": "没有找到任务",
     "Login session timed out": "登录会话超时",
     "Sorry, there was a problem authenticating with the server": "有一个问题与服务器进行身份验证",

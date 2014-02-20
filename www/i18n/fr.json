@@ -24,6 +24,7 @@
     "Error": "Erreur",
     "Sorry, there was an error": "Désolé, une erreur s'est produite",
     "Login failure": "Échec connexion",
+    "Credentials were not accepted": "Pouvoirs ont été rejetées",
     "No assignments found": "Pas de missions trouvés",
     "Login session timed out": "Connexion expiration de la session",
     "Sorry, there was a problem authenticating with the server": "Il y avait un problème de l'authentification avec le serveur",

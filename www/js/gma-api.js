@@ -26,6 +26,7 @@ var GMA = function (opts) {
 }
 
 
+
 /**
  * Wrapper for jQuery.ajax(), used internally
  */
@@ -38,12 +39,22 @@ GMA.prototype.request = function (opts) {
     var self = this;
     var dfd = $.Deferred();
     
+    var isParseError = function (err) {
+        if (!err.message) {
+            return false;
+        }
+        if (err.message.match(/parse error|unexpected end of input/i)) {
+            return true;
+        }
+        return false;
+    };
+    
     $.ajax({
         url: self.opts.gmaBase + opts.path,
         method: opts.method,
         data: (typeof opts.data != 'undefined') ?
                 JSON.stringify(opts.data) : opts.data,
-        dataType: 'json',
+        dataType: opts.dataType || 'json',
         contentType: 'application/json',
         cache: false
     })
@@ -56,7 +67,7 @@ GMA.prototype.request = function (opts) {
         }
     })
     .fail(function(res, status, err){
-        if (err.message && err.message.match(/JSON Parse error/)) {
+        if (isParseError(err)) {
             // JSON parse error usually means the session timed out and
             // the Drupal site has redirected to the CAS login page
             // instead of serving up a JSON response.
@@ -129,6 +140,7 @@ GMA.prototype.login = function (username, password) {
         // Step 0: Make sure we are not already logged in
         function(next){
             if (self.isLoggedIn) {
+                console.log("Logging out first to reset session");
                 self.logout()
                 .then(function(){ next() });
             } else {
@@ -148,10 +160,26 @@ GMA.prototype.login = function (username, password) {
                 next();
             })
             .fail(function(res, textStatus, err){
-                if (err) {
+                console.log(err);
+                if (err instanceof Error) {
+                    if (!err.message) {
+                        err.message = "[" + textStatus + ": " + res.status + "]";
+                    }
                     next(err);
                 } else {
-                    next(new Error(textStatus + ': ' + res.status));
+                    var message = 'Unexpected result from login server';
+                    switch (parseInt(res.status)) {
+                        case 404: 
+                            message = 'Make sure your VPN and server settings are correct'; 
+                            break;
+                        case 400:
+                            message = 'Credentials were not accepted';
+                            break;
+                        default:
+                            message = textStatus + ': ' + res.status;
+                            break;
+                    }
+                    next(new Error(message));
                 }
             });
         },
@@ -235,9 +263,10 @@ GMA.prototype.login = function (username, password) {
 GMA.prototype.getUser = function () {
     var dfd = $.Deferred();
     var self = this;
+    var servicePath = '?q=gmaservices/gma_user&type=current';
     
     self.request({
-        path: '?q=gmaservices/gma_user&type=current',
+        path: servicePath,
         method: 'GET'
     })
     .then(function(data, textStatus, res){
@@ -249,7 +278,9 @@ GMA.prototype.getUser = function () {
             dfd.resolve(ren);
         }
         else {
-            dfd.reject(new Error(data.error.errorMessage));
+            var err = new Error(data.error.errorMessage);
+            err.origin = servicePath;
+            dfd.reject(err);
         }
     })
     .fail(function(res, textStatus, err){
@@ -273,11 +304,10 @@ GMA.prototype.getUser = function () {
 GMA.prototype.getAssignments = function () {
     var dfd = $.Deferred();
     var self = this;
+    var servicePath = '?q=gmaservices/gma_user/' + self.renId + '/assignments/staff';
     
     self.request({
-        path: '?q=gmaservices/gma_user/' 
-                + self.renId
-                + '/assignments/staff',
+        path: servicePath,
         method: 'GET'
     })
     .then(function(data, textStatus, res){
@@ -295,7 +325,9 @@ GMA.prototype.getAssignments = function () {
             }
             dfd.resolve(assignmentsByID, assignmentsByName);
         } else {
-            dfd.reject(new Error(data.error.errorMessage));
+            var err = new Error(data.error.errorMessage);
+            err.origin = servicePath;
+            dfd.reject(err);
             console.log(data);
         }
     })
@@ -320,9 +352,10 @@ GMA.prototype.getAssignments = function () {
 GMA.prototype.getReportsForNode = function (nodeId) {
     var dfd = $.Deferred();
     var self = this;
+    var servicePath = '?q=gmaservices/gma_staffReport/searchOwn';
     
     self.request({
-        path: '?q=gmaservices/gma_staffReport/searchOwn',
+        path: servicePath,
         method: 'POST',
         data: {
             nodeId: [nodeId],
@@ -354,7 +387,9 @@ GMA.prototype.getReportsForNode = function (nodeId) {
             }
         
         } else {
-            dfd.reject(new Error(data.error.errorMessage));
+            var err = new Error(data.error.errorMessage);
+            err.origin = servicePath;
+            dfd.reject(err);
             console.log(data);
         }
     })
@@ -380,7 +415,8 @@ GMA.prototype.logout = function () {
     
     self.request({
         path: '?q=logout',
-        method: 'HEAD'
+        method: 'HEAD',
+        dataType: 'html'
     })
     .then(function(){
         self.isLoggedIn = false;
@@ -438,10 +474,10 @@ var Report = function(data) {
 Report.prototype.measurements = function () {
     var dfd = $.Deferred();
     var self = this;
+    var servicePath = '?q=gmaservices/gma_staffReport/' + self.reportId + '/numeric';
     
     self.gma.request({
-        path: '?q=gmaservices/gma_staffReport/'
-                + self.reportId + '/numeric',
+        path: servicePath,
         method: 'GET'
     })
     .then(function(data, textStatus, res) {
@@ -479,7 +515,9 @@ Report.prototype.measurements = function () {
             dfd.resolve(results);
             
         } else {
-            dfd.reject(new Error(data.error.errorMessage));
+            var err = new Error(data.error.errorMessage);
+            err.origin = servicePath;
+            dfd.reject(err);
         }
     })
     .fail(function(res, textStatus, err) {
@@ -588,11 +626,11 @@ Measurement.prototype.delayedSave = function () {
 Measurement.prototype.save = function () {
     var dfd = $.Deferred();
     var self = this;
+    var servicePath = '?q=gmaservices/gma_staffReport/'+ self.data.reportId;
 
     self.gma.request({
         noAnimation: true,
-        path: '?q=gmaservices/gma_staffReport/'
-                + self.data.reportId,
+        path: servicePath,
         method: 'PUT',
         data: [
             {
@@ -606,7 +644,9 @@ Measurement.prototype.save = function () {
         if (data.success) {
             dfd.resolve();
         } else {
-            dfd.reject(new Error(data.error.errorMessage));
+            var err = new Error(data.error.errorMessage);
+            err.origin = "PUT " + servicePath;
+            dfd.reject(err);
         }
     })
     .fail(function(res, status, err) {

@@ -16,10 +16,6 @@ var gma;
 
 // Use PhoneGap's notification API if available
 var _alert = function (message, title) {
-    if (message == 'error: 404') {
-        message = "Make sure your VPN and server settings are correct";
-    }
-
     if (navigator.notification) {
         navigator.notification.alert(
             t(message),
