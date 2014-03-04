@@ -82,19 +82,41 @@ var startGMA = function () {
     //    LOGIN PAGE   //
     /////////////////////
     
-    // Populate the GMA server list
-    var $serverList = $('#gma-server-list');
-    var profiles = Settings.getProfileLabels();
-    $serverList.empty();
-    for (var key in profiles) {
-        $serverList.append(
-            '<option value="' + key + '">' +
-            t(profiles[key]) +
-            '</option>'
-        );
-    }
-    $serverList.selectmenu("refresh");
+    var populateServerList = function () {
+        var $serverList = $('#gma-server-list');
+        var profiles = Settings.getProfileLabels();
+        $serverList.empty();
+        for (var key in profiles) {
+            $serverList.append(
+                '<option value="' + key + '">' +
+                t(profiles[key]) +
+                '</option>'
+            );
+        }
+        $serverList.selectmenu("refresh");
+    };
+    populateServerList();
     
+    // Swipe the "Server" label right to re-fetch the list of servers
+    var $server = $("#login-page label[for='gma-server-list']");
+    $server.on('swiperight', function(){
+        $server.animate({
+            paddingLeft: 40
+        });
+        $.mobile.loading('show');
+        Settings.fetchProfiles()
+        .always(function(){
+            $.mobile.loading('hide');
+            $server.animate({
+                paddingLeft: 0
+            });
+        })
+        .done(function(){
+            populateServerList();
+        });
+    });
+    
+        
     // Show the custom settings page when "Custom..." is selected from the list
     $('#gma-server-list').on('change', function(){
         var profileKey = $(this).val();
