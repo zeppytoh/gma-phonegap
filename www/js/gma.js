@@ -284,11 +284,12 @@ var startGMA = function () {
         var $li = $(this);
         var $input = $li.find('input');
         var value = parseInt($input.val());
-        if (value >= 1) {
+        if ($li.hasClass('ui-icon-plus')) {
             value += 1;
-        } else {
-            value = 1;
-        }
+        } 
+        else if ($li.hasClass('ui-icon-minus') && value > 0) {
+            value -= 1;
+        } 
         $input.val(value);
         $input.trigger('change');
     });
@@ -297,6 +298,25 @@ var startGMA = function () {
     // manually enter a value
     $('#stats-page ul').on('click', 'li input', function(ev){
         ev.stopPropagation();
+    });
+    
+    // Swipe left to toggle plus or minus
+    $('#stats-page ul').on('swipeleft', 'li', function(){
+        var $li = $(this);
+        var $input = $li.find('input');
+        var oldMargin = $li.css('marginRight');
+        var oldTextWidth = $input.width();
+        $input.width('1');
+        $input.css('visibility', 'hidden'); // invisible, but still present
+        $li.animate({ marginRight: '1em' }, function(){
+            $li.toggleClass('ui-icon-plus');
+            $li.toggleClass('ui-icon-minus');
+            $li.animate({ marginRight: oldMargin }, function(){
+                $input.width(oldTextWidth);
+                $input.css('visibility', 'visible');
+                $li.find('input').show();
+            });
+        });
     });
     
     
