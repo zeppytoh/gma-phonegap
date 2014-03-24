@@ -225,10 +225,13 @@ var startGMA = function () {
         gma.getReportsForNode(id)
         .fail(errorHandler)
         .then(function(results){
-        
-            reports = new ReportSet(results);
-            showReport( reports.get() );
-        
+            if (results.length > 0) {
+                reports = new ReportSet(results);
+                showReport( reports.get() );
+            }
+            else {
+                errorHandler(new Error("No reports available"));
+            }
         });
     });
     
@@ -324,13 +327,12 @@ var startGMA = function () {
             $li.animate({ marginRight: oldMargin }, function(){
                 $input.width(oldTextWidth);
                 $input.css('visibility', 'visible');
-                $li.find('input').show();
             });
         });
     });
     
     
-    // Update the server on every value change
+    // Update the server when value changes
     $('#stats-page ul').on('change', 'li input', function(ev){
         var $row = $(this).parent();
         var val = $(this).val();
