@@ -205,6 +205,16 @@ var startGMA = function () {
     }
     
     
+    // Handle logout button
+    $('#logout').on('click', function(){
+        gma.logout()
+        .fail(errorHandler)
+        .done(function(){
+            Page.popAll();
+        });
+    });
+    
+    
     // Handle clicks to an Assignment item
     $('#assignments-page ul').on('click', 'li a', function(ev){
         var $node = $(this);
