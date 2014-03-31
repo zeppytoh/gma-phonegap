@@ -179,33 +179,98 @@ var startGMA = function () {
     /////////////////////////////
     
     var reports;
+    var assignments = {
+        staff: {},
+        staffCount: 0,
+        director: {},
+        directorCount: 0
+    };
     
-    var showAssignments = function () {
-        // Populate the assignments list
+    
+    var fetchAssignments = function () {
+        var dfd = $.Deferred();
+        $.when( gma.getAssignments('staff'), gma.getAssignments('director') )
+        .fail(function(staffErr, directorErr){
+            console.log('fetchAssignments() failed');
+            console.log(arguments);
+            dfd.reject(staffErr || directorErr);
+        })
+        .done(function(staffResults, directorResults){
+            assignments.staff = staffResults[0];
+            assignments.staffCount = staffResults[2].length;
+            assignments.director = directorResults[0];
+            assignments.directorCount = directorResults[2].length;
+            dfd.resolve();
+        });
+        return dfd;
+    };
+    
+    
+    var populateList = function (role) {
         var $list = $('#assignments-page ul');
         $list.empty();
-        gma.getAssignments()
+        
+        // Change the toggle button's label
+        $('#assignment-toggle')
+            .html( t(role) )
+            .data('role', role);
+        
+        var assignmentsByID = assignments[role];
+        for (var nodeID in assignmentsByID) {
+            var nodeName = assignmentsByID[nodeID];
+            $list.append('<li><a href="#" node-id="' + nodeID + '">' + nodeName + '</a></li>');
+        }
+        $list.listview('refresh');
+    };
+    
+    
+    var showAssignments = function () {
+        fetchAssignments()
         .fail(errorHandler)
-        .then(function(byID, byName) {
-            var count = 0;
-            for (var nodeID in byID) {
-                var nodeName = byID[nodeID];
-                $list.append('<li><a href="#" node-id="' + nodeID + '">' + nodeName + '</a></li>');
-                count += 1;
-            }
-            if (count == 0) {
+        .done(function() {
+            if (assignments.staff.length + assignments.director.length == 0) {
                 errorHandler(new Error("No assignments found"));
             }
             else {
-                $list.listview('refresh');
-                // Show the assignments page
+                if (Math.min(assignments.staffCount, assignments.directorCount) > 0) {
+                    // Both roles have assignments. Reveal the toggle button.
+                    $('#assignment-toggle').show();
+                } else {
+                    $('#assignment-toggle').hide();
+                }
+                
+                if (assignments.staffCount == 0) {
+                    // If they only have director role
+                    populateList('director');
+                }
+                else {
+                    // If they have both roles, or only staff role
+                    populateList('staff');
+                }
+                
                 Page.list['assignments-page'].push();
             }
         });
     }
     
     
-    // Handle logout button
+    // Handle the toggle button
+    $('#assignment-toggle').on('click', function(){
+        var $this = $(this);
+        var newRole;
+        switch ($this.data('role')) {
+            case 'staff':
+                newRole = 'director';
+                break;
+            case 'director':
+                newRole = 'staff';
+                break;
+        }
+        populateList(newRole);
+    });
+
+    
+    // Handle the logout button
     $('#logout').on('click', function(){
         gma.logout()
         .fail(errorHandler)
