@@ -28,6 +28,10 @@
     padding: 0;
     border-top: 20px solid #e9e9e9;
 }
+.container-director {
+    /* see #assignment-toggle.director */
+    border-top: 20px solid lightsteelblue;
+}
 .page {
     /* all pages hidden by default until shown */
     display: none;
@@ -51,6 +55,14 @@
 #custom-settings label {
     margin-top: 1em;
 }
+
+/* Button that toggles between Staff / Director assignments */
+#assignment-toggle.staff {
+}
+#assignment-toggle.director {
+    background-color: lightsteelblue;
+}
+
 
 /* Stats entry rows */
 #stats-page li.ui-field-contain label {

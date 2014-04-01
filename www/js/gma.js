@@ -185,14 +185,15 @@ var startGMA = function () {
         director: {},
         directorCount: 0
     };
+    var currentRole = 'staff';
+    var oldRole = 'director';
     
-    
+    // Fetch assignment data from GMA server and update local variables.
+    // Called by showAssignments()
     var fetchAssignments = function () {
         var dfd = $.Deferred();
         $.when( gma.getAssignments('staff'), gma.getAssignments('director') )
         .fail(function(staffErr, directorErr){
-            console.log('fetchAssignments() failed');
-            console.log(arguments);
             dfd.reject(staffErr || directorErr);
         })
         .done(function(staffResults, directorResults){
@@ -205,15 +206,30 @@ var startGMA = function () {
         return dfd;
     };
     
-    
+    // Populate the on-screen list
+    // Called by showAssignments();
     var populateList = function (role) {
         var $list = $('#assignments-page ul');
         $list.empty();
         
-        // Change the toggle button's label
+        currentRole = role;
+        if (role == 'staff') { 
+            oldRole = 'director'; 
+        } else { 
+            oldRole = 'staff'; 
+        }
+
+        // Change button label
         $('#assignment-toggle')
-            .html( t(role) )
-            .data('role', role);
+            .text( t(oldRole) )
+            .addClass(oldRole)
+            .removeClass(currentRole);
+        // Change container color to reflect current role
+        $('.container')
+            .addClass('container-' + currentRole)
+            .removeClass('container-' + oldRole);
+        // Change header label
+        $('#assignments-page h1').html(t(currentRole+' reports'))
         
         var assignmentsByID = assignments[role];
         for (var nodeID in assignmentsByID) {
@@ -256,17 +272,7 @@ var startGMA = function () {
     
     // Handle the toggle button
     $('#assignment-toggle').on('click', function(){
-        var $this = $(this);
-        var newRole;
-        switch ($this.data('role')) {
-            case 'staff':
-                newRole = 'director';
-                break;
-            case 'director':
-                newRole = 'staff';
-                break;
-        }
-        populateList(newRole);
+        populateList(oldRole);
     });
 
     
@@ -287,7 +293,7 @@ var startGMA = function () {
         var name = $node.text();
         
         // Populate the stats list
-        gma.getReportsForNode(id)
+        gma.getReportsForNode(id, currentRole)
         .fail(errorHandler)
         .then(function(results){
             if (results.length > 0) {
