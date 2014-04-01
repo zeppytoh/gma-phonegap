@@ -410,10 +410,13 @@ var startGMA = function () {
     // Switch to a different report period when the arrow button is clicked
     $('#stats-page a.report-nav').on('click', function(){
         var $this = $(this);
+        // The reports list is ordered most recent first.
+        // So clicking on the "Next" button should show the previous
+        // report chronologically, although it is the next report in the list.
         if ($this.hasClass('report-previous')) {
-            showReport( reports.prev() );
-        } else {
             showReport( reports.next() );
+        } else {
+            showReport( reports.prev() );
         }
     });
     
