@@ -93,7 +93,16 @@ var startGMA = function () {
                 '</option>'
             );
         }
-        $serverList.selectmenu("refresh");
+        if (Settings.lockedInMode) {
+            $serverList.parents('.ui-select').hide();
+            $('#locked-in-server')
+                .text( Settings.getLabel() )
+                .show();
+        } else {
+            $('#locked-in-server').hide();
+            $serverList.parents('.ui-select').show();
+            $serverList.selectmenu("refresh");
+        }
     };
     populateServerList();
     
@@ -116,17 +125,38 @@ var startGMA = function () {
         });
     });
     
-        
-    // Show the custom settings page when "Custom..." is selected from the list
+    
+    // Handle swipes to the server text when in "locked in" mode
+    $('#locked-in-server').on('swiperight', function(){
+        var $serverList = $('#gma-server-list');
+        var currentIndex = $serverList.get(0).selectedIndex;
+        if (currentIndex < $serverList.children().length - 1) {
+            $serverList.get(0).selectedIndex += 1;
+            $serverList.trigger('change');
+        }
+    });
+    $('#locked-in-server').on('swipeleft', function(){
+        var $serverList = $('#gma-server-list');
+        var currentIndex = $serverList.get(0).selectedIndex;
+        if (currentIndex > 0) {
+            $serverList.get(0).selectedIndex -= 1;
+            $serverList.trigger('change');
+        }
+    });
+    
+    
+    // Update the Settings object when a profile is chosen
     $('#gma-server-list').on('change', function(){
         var profileKey = $(this).val();
+        Settings.currentProfile = profileKey;
+        $('#locked-in-server').text( Settings.getLabel() );
 
+        // Show the custom settings page when "Custom..." is selected from the list        
         if (profileKey == 'custom') {
             Page.list['custom-settings-page'].push();
         }
-        
-        Settings.currentProfile = profileKey;
     });
+
 
     // Logging in
     $('#login-button').on('click', function(){

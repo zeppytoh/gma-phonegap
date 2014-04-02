@@ -33,6 +33,10 @@ var Settings = {
     // The index of the currently selected profile
     currentProfile: 0,
     
+    // The settings can be locked in to one server profile
+    // saving the user from having to select from a list.
+    lockedInMode: false,
+    
     /**
      * Fetch the latest profiles from our server
      */
@@ -47,6 +51,10 @@ var Settings = {
         })
         .then(function(data, status, res){
             if (data instanceof Array) {
+                // If the profile authority server was reachable, then
+                // enable locked in mode.
+                self.lockedInMode = true;
+            
                 self.profiles = data;
                 dfd.resolve(self.profiles);
             }
@@ -108,7 +116,9 @@ var Settings = {
         for (var i=0; i<Settings.profiles.length; i++) {
             labels[i] = Settings.getLabel(i);
         }
-        labels['custom'] = Settings.getLabel('custom');
+        if (!Settings.lockedInMode) {
+            labels['custom'] = Settings.getLabel('custom');
+        }
         
         return labels;
     }
