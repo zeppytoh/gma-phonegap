@@ -56,6 +56,11 @@
     margin-top: 1em;
 }
 
+#locked-in-server {
+    font-weight: bold;
+    padding-left: 1em;
+}
+
 /* Button that toggles between Staff / Director assignments */
 #assignment-toggle.staff {
 }
