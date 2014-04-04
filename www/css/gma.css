@@ -23,6 +23,10 @@
     Specific formatting
 */
 
+body {
+    background-image: url(../res/screen/ios/screen-iphone-portrait.png);
+}
+
 .container {
     margin: 0;
     padding: 0;
