@@ -55,6 +55,17 @@ var errorHandler = function (err) {
 
 var startGMA = function () {
     
+    // Load the version info
+    $.ajax({
+        url: 'config.xml',
+        type: 'GET',
+        dataType: 'xml'
+    })
+    .done(function(data){
+        var version = $(data).find('widget').attr('version');
+        $('#version').text(version);
+    });
+    
     // Show the first page
     Page.init();
     Page.list['login-page'].push();

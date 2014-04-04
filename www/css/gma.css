@@ -40,6 +40,7 @@ body {
     /* all pages hidden by default until shown */
     display: none;
     margin-bottom: 1em;
+    background: white;
 }
 
 .visible-page {
@@ -63,6 +64,10 @@ body {
 #locked-in-server {
     font-weight: bold;
     padding-left: 1em;
+}
+
+#login-page [data-role='footer'] {
+    font-size: .5em;
 }
 
 /* Button that toggles between Staff / Director assignments */
