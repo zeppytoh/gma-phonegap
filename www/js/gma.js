@@ -285,7 +285,7 @@ var startGMA = function () {
         fetchAssignments()
         .fail(errorHandler)
         .done(function() {
-            if (assignments.staff.length + assignments.director.length == 0) {
+            if (assignments.staffCount + assignments.directorCount == 0) {
                 errorHandler(new Error("No assignments found"));
             }
             else {
@@ -321,7 +321,7 @@ var startGMA = function () {
     $('#logout').on('click', function(){
         gma.logout()
         .fail(errorHandler)
-        .done(function(){
+        .always(function(){
             Page.popAll();
         });
     });
