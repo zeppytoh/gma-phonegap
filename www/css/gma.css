@@ -24,7 +24,7 @@
 */
 
 body {
-    background-image: url(../res/screen/ios/screen-iphone-portrait.png);
+    background: url(../res/screen/ios/screen-iphone-portrait.png) no-repeat center center;
 }
 
 .container {
